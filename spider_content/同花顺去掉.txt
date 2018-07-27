@@ -1,0 +1,9 @@
+1.
+<p class="bottomSign"><a class="gsrd-hidden brokers_hidden" href="http://focus.10jqka.com.cn/weixin.html" target="_blank"><strong>关注同花顺财经（ths518），获取更多机会</strong></a></p>
+
+2. 
+<span id="arctTailMark"></span>
+			<script type="text/javascript">(function(){var obj = null;if(document.getElementById('arctTailMark')) {obj = document.getElementById('arctTailMark');}if(obj!=null){var str = '<a href="http://www.10jqka.com.cn" target="_blank" id="back_web" style="font-weight:bold" rel="nofollow" class="backweb"><img src="http://i.thsi.cn/images/article/logo.jpg" style="height:15px">  返回首页</a>';var showed = 0;try{var oo = obj.previousSibling;while(oo.nodeType!=1 || oo.innerHTML.replace(/\s|\u3000/g,'').length==0){oo = oo.previousSibling;}if(oo.nodeType==1 && oo.tagName.toLowerCase()=='p') {var span = document.createElement('span');span.innerHTML =str;oo.appendChild(span);showed = 1;}}catch (e){}if(showed == 0){obj.innerHTML =str;}}})();</script>
+
+3. 
+<div class="editor"><span id="editor_baidu">责任编辑：fbc</span></div>

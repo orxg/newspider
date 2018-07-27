@@ -1,0 +1,10 @@
+xiaoyi:
+    server:
+        172.19.62.10
+    db:
+        sds209635243_db
+    user:
+        financial_xiaoyi
+    passwd:
+        fs95536!
+
