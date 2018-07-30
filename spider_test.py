@@ -27,57 +27,65 @@ def header_generator():
     header['X-Forwarded-For'] = ip_generator()
     return header
 #%% 同花顺
-def ths_news_time_convertor(ths_time):
-    '''
-    同花顺新闻时间转换成正常时间。
-    '''
-    year = dt.datetime.today().year
-    month = ths_time[:2]
-    day = ths_time[3:5]
-    hour = ths_time[7:9]
-    minute = ths_time[10:12]
-    return str(year) + '-' + month + '-' + day + ' ' + \
-            hour + ':' + minute
-            
-url_ths = 'http://news.10jqka.com.cn/cjzx_list/index_1.shtml'
-last_news_time = None
-
-    
-    # 标题页数据获取
-response = requests.get(url_ths,headers = header_generator())
-
-
-# 标题页数据解析
-soup = BeautifulSoup(response.content,'html.parser')
-content_titles = soup.find_all('span',class_ = 'arc-title')
-        
-titles = []
-news_time = []
-hrefs = []
-
-for each in content_titles:
-    tmp = each.find('a')
-    titles.append(tmp.attrs['title'])
-    news_time.append(ths_news_time_convertor(each.find('span').text))
-    hrefs.append(tmp.attrs['href'])
-
-news_df = pd.DataFrame([titles,news_time,hrefs],
-                      index = ['title','news_time','href']).T   
-
-additions = news_df       
-# 增量爬取
-for idx,row in additions.iterrows():
-    pass
-    link = row['href']
-    link_response = requests.get(link,headers = header_generator())
-
-    tmp_soup = BeautifulSoup(link_response.content,'html.parser')
-    main_text = tmp_soup.find(class_ = 'main-text atc-content')
-    
-    news_content = str(main_text.contents[1])
-    
-
-    additions.loc[idx,'content'] = news_content
+#==============================================================================
+# def ths_news_time_convertor(ths_time):
+#     '''
+#     同花顺新闻时间转换成正常时间。
+#     '''
+#     year = dt.datetime.today().year
+#     month = ths_time[:2]
+#     day = ths_time[3:5]
+#     hour = ths_time[7:9]
+#     minute = ths_time[10:12]
+#     return str(year) + '-' + month + '-' + day + ' ' + \
+#             hour + ':' + minute
+#             
+# url_ths = 'http://news.10jqka.com.cn/cjzx_list/index_1.shtml'
+# last_news_time = None
+# 
+#     
+#     # 标题页数据获取
+# response = requests.get(url_ths,headers = header_generator())
+# 
+# 
+# # 标题页数据解析
+# soup = BeautifulSoup(response.content,'html.parser')
+# content_titles = soup.find_all('span',class_ = 'arc-title')
+#         
+# titles = []
+# news_time = []
+# hrefs = []
+# 
+# for each in content_titles:
+#     tmp = each.find('a')
+#     titles.append(tmp.attrs['title'])
+#     news_time.append(ths_news_time_convertor(each.find('span').text))
+#     hrefs.append(tmp.attrs['href'])
+# 
+# news_df = pd.DataFrame([titles,news_time,hrefs],
+#                       index = ['title','news_time','href']).T   
+# 
+# additions = news_df       
+# # 增量爬取
+# for idx,row in additions.iterrows():
+#     link = row['href']
+#     link_response = requests.get(link,headers = header_generator())
+#     
+#     tmp_soup = BeautifulSoup(link_response.content,'html.parser')
+#     main_text = tmp_soup.find(class_ = 'main-text atc-content')
+#     
+#     news_content = ''
+#     p_list = main_text.find_all('p')
+#     for p in p_list:
+#         if p.has_attr('class'):
+#             if p.attrs['class'] == 'bottomSign':
+#                 break
+#         else:
+#             news_content += str(p).decode('utf8')
+#     
+# 
+#     additions.loc[idx,'content'] = news_content
+#==============================================================================
 #%% 中证网
 #==============================================================================
 # zzw_url = 'http://www.cs.com.cn/xwzx/'
@@ -117,20 +125,19 @@ for idx,row in additions.iterrows():
 #     content = link_response.text
 #     tmp_soup = BeautifulSoup(content,'html.parser')
 #     article = tmp_soup.find('div',class_ = 'article-t hidden')
-#     article = article.find_all('p')
-#     article = [str(each) for each in article]
-#     article = ''.join(article)
+#     article = str(article).decode('utf8')
+# 
 #     additions.loc[idx,'content'] = article
 #     break
+# 
 #==============================================================================
-
 #%% 中国证券网
 #==============================================================================
 # url = 'http://news.cnstock.com/news/sns_yw/index.html'
 # 
 # response = requests.get(url,headers = header_generator())
 # content = response.content
-# soup = BeautifulSoup(content)
+# soup = BeautifulSoup(content,'html.parser')
 # content_titles = soup.find('ul',class_ = 'new-list article-mini')
 # news_time = [each.text[1:-1] for each in content_titles.find_all('span',class_ = 'time')]
 # hrefs = [each.attrs['href'] for each in content_titles.find_all('a')]
@@ -143,14 +150,14 @@ for idx,row in additions.iterrows():
 # 
 # 
 # for idx,row in additions.iterrows():
+#     break
 #     link = row['href']
 #     link_response = requests.get(link,headers = header_generator())
-#     tmp_soup = BeautifulSoup(link_response.content)
+#     tmp_soup = BeautifulSoup(link_response.content,'html.parser')
 #     
 #     content = tmp_soup.find('div',class_ = 'content')
-#     content_list = content.find_all('p')
-#     content_list = [each.text for each in content_list]
-#     content = '\n'.join(content_list)
+#     content = str(content).decode('utf8')
+#     
 #     additions.loc[idx,'content'] = content
 #     break
 #==============================================================================
@@ -175,66 +182,65 @@ for idx,row in additions.iterrows():
 # additions['news_source'] = ''
 #  
 # for idx,row in additions.iterrows():
+#     break
 #     link = row['href']
 #     link_response = requests.get(link,headers = header_generator())
-#     tmp_soup = BeautifulSoup(link_response.content)
+#     tmp_soup = BeautifulSoup(link_response.content,'html.parser')
 #     content = tmp_soup.find(class_ = 'txt_con')
-#     content_list = content.find_all('p')
-#     content_list = [each.text for each in content_list]
-#     content = '\n'.join(content_list)
+#     content = str(content).decode('utf8')
+#     
 #     
 #     additions.loc[idx,'content'] = content
 #     break
 #==============================================================================
 
 #%% 人民网
-#==============================================================================
-# url = 'http://finance.people.com.cn/index1.html'
-# 
-# response = requests.get(url,headers = header_generator())
-# response.encoding = response.apparent_encoding
-# content = response.text
-# 
-# soup = BeautifulSoup(content,'html.parser')
-# related = soup.find_all('div',class_ = 'left w310')
-# 
-# for each in related:
-#     if each.find('h2'):
-#         if each.find('h2').text == u'宏观':
-#             hrefs = each
-#             break
-#         
-# hrefs = [each.attrs['href'] for each in hrefs.find_all('a')]
-# hrefs = [urlparse.urljoin(url,each) for each in hrefs]
-#         
-# news_df = pd.DataFrame([hrefs],index = ['href']).T
-# 
-# additions = news_df
-# additions['news_source'] = ''
-# 
-# for idx,row in additions.iterrows():
-#     link = row['href']
-#     
-#     response = requests.get(link,headers = header_generator())
-#     response.encoding = response.apparent_encoding
-#     tmp_soup = BeautifulSoup(response.text,'html.parser')
-#     
-#     header = tmp_soup.find('div',class_ = 'clearfix w1000_320 text_title')
-#     title = header.find('h1').text
-#     news_time = header.find(class_ = 'fl').text[:16]
-#     news_time = news_time.replace(u'年','-')
-#     news_time = news_time.replace(u'月','-')
-#     news_time = news_time.replace(u'日',' ') 
-#     
-#     content = tmp_soup.find(class_ = 'box_con')
-#     content_list = [each.text.strip() for each in content.find_all('p')]
-#     content = '\n'.join(content_list)
-#     
-#     additions.loc[idx,'title'] = title
-#     additions.loc[idx,'news_time'] = news_time
-#     additions.loc[idx,'content'] = content
-#     
-#     
-#     
-#     break
-#==============================================================================
+url = 'http://finance.people.com.cn/index1.html'
+
+response = requests.get(url,headers = header_generator())
+response.encoding = response.apparent_encoding
+content = response.text
+
+soup = BeautifulSoup(content,'html.parser')
+related = soup.find_all('div',class_ = 'left w310')
+
+for each in related:
+    if each.find('h2'):
+        if each.find('h2').text == u'宏观':
+            hrefs = each
+            break
+        
+hrefs = [each.attrs['href'] for each in hrefs.find_all('a')]
+hrefs = [urlparse.urljoin(url,each) for each in hrefs]
+        
+news_df = pd.DataFrame([hrefs],index = ['href']).T
+
+additions = news_df
+additions['news_source'] = ''
+
+for idx,row in additions.iterrows():
+    break
+    link = row['href']
+    
+    response = requests.get(link,headers = header_generator())
+    response.encoding = response.apparent_encoding
+    tmp_soup = BeautifulSoup(response.text,'html.parser')
+    
+    header = tmp_soup.find('div',class_ = 'clearfix w1000_320 text_title')
+    title = header.find('h1').text
+    news_time = header.find(class_ = 'fl').text[:16]
+    news_time = news_time.replace(u'年','-')
+    news_time = news_time.replace(u'月','-')
+    news_time = news_time.replace(u'日',' ') 
+    
+    content = tmp_soup.find(class_ = 'box_con')
+
+    content = str(content).decode('utf8')
+    
+    additions.loc[idx,'title'] = title
+    additions.loc[idx,'news_time'] = news_time
+    additions.loc[idx,'content'] = content
+    
+    
+    
+    break

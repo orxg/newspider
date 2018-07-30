@@ -58,17 +58,18 @@ class THSSpider(NewsSpider):
         
     def _parse_content_response(self,idx):
         tmp_soup = BeautifulSoup(self.content_response.content,'html.parser')
-        try:
-            main_text = tmp_soup.find_all(class_ = 'main-text atc-content')
-            main_text = main_text[0]
-            main_text_list = main_text.find_all('p')
-            main_text_content = [each.text for each in main_text_list][1:-1]
-            tmp_content = '\n'.join(main_text_content)
-            last_stop_point = tmp_content.rfind(u'。')
-            filtered_content = tmp_content[:last_stop_point + 1]
-            self.additions.loc[idx,'content'] = filtered_content
-        except:
-            self.additions.loc[idx,'content'] = None
+
+        main_text = tmp_soup.find_all(class_ = 'main-text atc-content')
+        news_content = ''
+        p_list = main_text.find_all('p')
+        for p in p_list:
+            if p.has_attr('class'):
+                if p.attrs['class'] == 'bottomSign':
+                    break
+            else:
+                news_content += str(p).decode('utf8')
+                
+        self.additions.loc[idx,'content'] = news_content
                 
         self.additions.loc[:,'update_datetime'] = dt.datetime.today()  
         return tmp_soup
@@ -118,9 +119,7 @@ class ZZWSpdier(NewsSpider):
         try:
             tmp_soup = BeautifulSoup(content,'html.parser')
             article = tmp_soup.find('div',class_ = 'article-t hidden')
-            article = article.find_all('p')
-            article = [each.text for each in article]
-            article = '\n'.join(article)
+            article = str(article).decode('utf8')
             self.additions.loc[idx,'content'] = article
         except:
             self.additions.loc[idx,'content'] = None
@@ -163,9 +162,7 @@ class CNSTOCKSpider(NewsSpider):
         tmp_soup = BeautifulSoup(self.content_response.content,'html.parser')
         
         content = tmp_soup.find('div',class_ = 'content')
-        content_list = content.find_all('p')
-        content_list = [each.text for each in content_list]
-        content = '\n'.join(content_list)
+        content = str(content).decode('utf8')
         self.additions.loc[idx,'content'] = content
         self.additions.loc[:,'update_datetime'] = dt.datetime.today()  
         
@@ -208,10 +205,9 @@ class STCNSpider(NewsSpider):
  
     def _parse_content_response(self,idx):
         tmp_soup = BeautifulSoup(self.content_response.content,'html.parser')
+        
         content = tmp_soup.find(class_ = 'txt_con')
-        content_list = content.find_all('p')
-        content_list = [each.text for each in content_list]
-        content = '\n'.join(content_list)
+        content = str(content).decode('utf8')
         
         self.additions.loc[idx,'content'] = content
         self.additions.loc[:,'update_datetime'] = dt.datetime.today()      
@@ -271,8 +267,8 @@ class PeopleSpider(NewsSpider):
         news_time = news_time.replace(u'日',' ') 
         
         content = tmp_soup.find(class_ = 'box_con')
-        content_list = ['  ' + each.text.strip() for each in content.find_all('p')]
-        content = '\n'.join(content_list)
+    
+        content = str(content).decode('utf8')
         
         self.additions.loc[idx,'title'] = title
         self.additions.loc[idx,'news_time'] = news_time
