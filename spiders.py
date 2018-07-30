@@ -7,6 +7,7 @@ Created on Fri Jul 20 16:40:02 2018
 
 # spiders.py
 
+import re
 import datetime as dt
 import urlparse
 import requests
@@ -58,21 +59,24 @@ class THSSpider(NewsSpider):
         
     def _parse_content_response(self,idx):
         tmp_soup = BeautifulSoup(self.content_response.content,'html.parser')
-
-        main_text = tmp_soup.find_all(class_ = 'main-text atc-content')
-        news_content = ''
-        p_list = main_text.find_all('p')
-        for p in p_list:
-            if p.has_attr('class'):
-                if p.attrs['class'] == 'bottomSign':
-                    break
-            else:
-                news_content += str(p).decode('utf8')
-                
-        self.additions.loc[idx,'content'] = news_content
-                
-        self.additions.loc[:,'update_datetime'] = dt.datetime.today()  
-        return tmp_soup
+        try:
+            main_text = tmp_soup.find_all(class_ = 'main-text atc-content')
+            news_content = ''
+            p_list = main_text.find_all('p')
+            for p in p_list:
+                if p.has_attr('class'):
+                    if p.attrs['class'] == 'bottomSign':
+                        break
+                else:
+                    news_content += str(p).decode('utf8')
+                    
+            self.additions.loc[idx,'content'] = news_content
+                    
+            self.additions.loc[:,'update_datetime'] = dt.datetime.today()
+        except:
+            self.additions.loc[idx,'content'] = None                    
+            self.additions.loc[:,'update_datetime'] = dt.datetime.today()            
+        
     
 class ZZWSpdier(NewsSpider):
     def __init__(self,lock,update_seconds = 600):
@@ -113,14 +117,50 @@ class ZZWSpdier(NewsSpider):
         self.additions.loc[:,'news_source'] = self.source_name               
     
     def _parse_content_response(self,idx):
-        encoding = requests.utils.get_encodings_from_content(self.content_response.text)
-        self.content_response.encoding = encoding[0]
-        content = self.content_response.text
         try:
+            encoding = requests.utils.get_encodings_from_content(self.content_response.text)
+            self.content_response.encoding = encoding[0]
+            
+            # parse content
+            content = self.content_response.text
             tmp_soup = BeautifulSoup(content,'html.parser')
             article = tmp_soup.find('div',class_ = 'article-t hidden')
-            article = str(article).decode('utf8')
-            self.additions.loc[idx,'content'] = article
+            
+            # 解析总页数
+            js_script = article.find(class_ = 'page').text
+            count_page_str = re.findall(r'var countPage = (\d+)',js_script)
+            count_page = int(count_page_str[0])
+            
+            # 剔除javascript代码部分
+            pages_js = article.find(class_ = 'page')
+            pages_js.clear() 
+            
+            if count_page == 1:        
+                self.additions.loc[idx,'content'] = str(article).decode('utf8')
+            else: # 爬取其他页面
+                link_compoent_list = self.content_response.url.split('.')
+                last_file = link_compoent_list[-2]
+                pages_list = [last_file + '_' + str(i) for i in range(1,count_page)]
+                
+                other_links = []
+                for i in range(0,count_page - 1):
+                    link_compoent_list[-2] = pages_list[i]
+                    other_links.append('.'.join(link_compoent_list))
+                
+                content_all = str(article).decode('utf8')
+                
+                for other_link in other_links:
+                    link_response = requests.get(other_link,headers = self.header_generator())            
+                    encoding = requests.utils.get_encodings_from_content(link_response.text)
+                    link_response.encoding = encoding[0]    
+                    content = link_response.text
+                    tmp_soup = BeautifulSoup(content,'html.parser')
+                    article = tmp_soup.find('div',class_ = 'article-t hidden')
+                    pages_js = article.find(class_ = 'page')
+                    pages_js.clear() 
+                    content_all += str(article).decode('utf8')
+                    
+                self.additions.loc[idx,'content'] = content_all
         except:
             self.additions.loc[idx,'content'] = None
         self.additions.loc[:,'update_datetime'] = dt.datetime.today()  
