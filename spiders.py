@@ -171,6 +171,7 @@ class CNSTOCKSpider(NewsSpider):
         super(CNSTOCKSpider,self).__init__('CNSTOCK',u'中国证券网',
              'http://news.cnstock.com/news/sns_yw/index.html',
              lock,update_seconds)  
+        self.web_url = 'http://www.cnstock.com'
         
     def _parse_titles_response(self):
         content = self.titles_response.content
@@ -202,6 +203,11 @@ class CNSTOCKSpider(NewsSpider):
         tmp_soup = BeautifulSoup(self.content_response.content,'html.parser')
         
         content = tmp_soup.find('div',class_ = 'content')
+        imgs = content.find_all('img')
+        if len(imgs) != 0:
+            for img in imgs:
+                img.attrs['src'] = urlparse.urljoin(self.web_url,img.attrs['src'])
+        
         content = str(content).decode('utf8')
         self.additions.loc[idx,'content'] = content
         self.additions.loc[:,'update_datetime'] = dt.datetime.today()  
