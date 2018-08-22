@@ -9,7 +9,9 @@ Created on Fri Jul 20 16:05:53 2018
 
 from threading import Lock
 from spider_base import SpiderMaster
-from spiders import THSSpider,ZZWSpdier,CNSTOCKSpider,STCNSpider,PeopleSpider
+from spiders import (THSSpider,ZZWSpdier,CNSTOCKSpider,STCNSpider,PeopleSpider,
+                     HeaderPeopleSpider,HeaderCNSTOCKSpider,HeaderZZWSpdier,
+                     HeaderSTCNSpider)
 
 if __name__ == '__main__':
     spider_master = SpiderMaster()
@@ -22,7 +24,10 @@ if __name__ == '__main__':
     spider_list.append(CNSTOCKSpider(lock))
     spider_list.append(STCNSpider(lock))
     spider_list.append(PeopleSpider(lock))
-    
+    spider_list.append(HeaderPeopleSpider(lock))
+    spider_list.append(HeaderCNSTOCKSpider(lock))
+    spider_list.append(HeaderZZWSpdier(lock))
+    spider_list.append(HeaderSTCNSpider(lock))    
     for each in spider_list:
         spider_master.add_spider(each)
     spider_master.run()

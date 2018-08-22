@@ -10,12 +10,12 @@ Created on Fri Jul 20 14:57:43 2018
 import time
 import random
 import threading
-from sqlalchemy.types import VARCHAR,TEXT,DATETIME
+from sqlalchemy.types import VARCHAR,DATETIME,NVARCHAR,INT
 import requests
 import pandas as pd
 
 from database_engine import DatabaseEngine
-from SQLs import SQL_MERGE_MACRO_NEWS
+from SQLs import SQL_MERGE_MACRO_NEWS,SQL_MERGE_MACRO_NEWS_FOR_HEADER
 from utils import header_generator
 
 
@@ -37,12 +37,15 @@ class NewsSpider(object):
             线程共享锁,threading.lock()
         update_seconds
             int,基础更新间隔
+        if_header
+            int,0 或 1 是否头条爬虫
         '''
         self.spider_name = spider_name
         self.source_name = source_name
         self.title_url = title_url
         self.lock = lock
         self.update_seconds = update_seconds
+        self.if_header = 0
         
     def init_spider(self,if_connect = True): 
 
@@ -94,6 +97,8 @@ class NewsSpider(object):
             if len(self.additions) == 0:
                 self._have_a_rest()
                 continue
+            self._add_unique_flag()
+            self._add_header_flag()
             self._write_into_db()
             self._have_a_rest()
             
@@ -108,8 +113,13 @@ class NewsSpider(object):
         '''
         获取新闻具体内容response.
         '''
-        self.content_response = requests.get(href,headers = self.header_generator())
-        return self.content_response.status_code
+        try:
+            self.content_response = requests.get(href,headers = self.header_generator())
+            return self.content_response.status_code
+        except Exception as e:
+            print 'Spider {sp} failed to get content from {web} because: {error}'.format(
+                    sp = self.spider_name,web = href,error = str(e))
+            return 0
     
     def _parse_titles_response(self):
         '''
@@ -142,8 +152,26 @@ class NewsSpider(object):
         
         self.additions = self.additions.drop('content_len',axis = 1)
         
+    def _add_unique_flag(self):
+        '''
+        为新闻内容添加唯一性标志.实现新闻去重.
+        '''
+        punctuation_list = [u'?',u'.',u',',u'!',u':',u'"',u' ',u'…',u'%',u'<',u'>',
+                           u'？', u'。',u'，',u'！',u'：',u'”',u'“',u'、',u'《',
+                           u'》']
+        def delete_punctuations(title):
+            new_title = title
+            for punc in punctuation_list:
+                new_title = new_title.replace(punc,'')
+            return new_title
+        self.additions['unique_flag'] = self.additions['title'].apply(delete_punctuations)
         
-        
+    def _add_header_flag(self):
+        '''
+        为新闻内容添加是否头条的字段.
+        '''
+        self.additions.loc[:,'if_header'] = self.if_header
+                
     def _write_into_db(self):
         '''
         写入数据库.
@@ -155,11 +183,17 @@ class NewsSpider(object):
                          dtype = {'title':VARCHAR(256),
                                   'news_time':VARCHAR(64),
                                   'href':VARCHAR(256),
-                                  'content':TEXT,
+                                  'content':NVARCHAR(),
                                   'update_datetime':DATETIME,
-                                  'news_source':VARCHAR(32)})
-        self.session.execute(SQL_MERGE_MACRO_NEWS)
-        self.session.commit()
+                                  'news_source':VARCHAR(32),
+                                  'unique_flag':VARCHAR(256),
+                                  'if_header':INT})
+        if not self.if_header:
+            self.session.execute(SQL_MERGE_MACRO_NEWS)
+            self.session.commit()
+        else:
+            self.session.execute(SQL_MERGE_MACRO_NEWS_FOR_HEADER)
+            self.session.commit()
         self.lock.release() # 释放
     
     def _have_a_rest(self):
@@ -201,7 +235,7 @@ class NewsSpider(object):
                              dtype = {'title':VARCHAR(256),
                                       'news_time':VARCHAR(64),
                                       'href':VARCHAR(256),
-                                      'content':TEXT,
+                                      'content':NVARCHAR(),
                                       'update_datetime':DATETIME,
                                       'news_source':VARCHAR(32)})
             self.session.execute(SQL_MERGE_MACRO_NEWS)
