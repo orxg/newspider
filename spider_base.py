@@ -17,13 +17,13 @@ import pandas as pd
 from database_engine import DatabaseEngine
 from SQLs import SQL_MERGE_MACRO_NEWS,SQL_MERGE_MACRO_NEWS_FOR_HEADER
 from utils import header_generator
-
+from consts import SPIDER_LIVE_TIME
 
 class NewsSpider(object):
     def __init__(self,spider_name,source_name,title_url,lock,
                  update_seconds = 600):
         '''
-        新闻爬虫.
+        新闻爬虫工厂。
         
         Parameters
         ----------
@@ -66,7 +66,8 @@ class NewsSpider(object):
         
     def spider_data(self):
         print 'Spider %s starts to run...'%self.spider_name
-        while True:
+        spider_birth_time = time.time()
+        while time.time() - spider_birth_time < SPIDER_LIVE_TIME:
             # 获取标题页
             status_code = self._get_titles_response()
             
@@ -76,7 +77,15 @@ class NewsSpider(object):
             # ----------- 标题页分析,确定增量更新内容self.additions -----------
             # additions.columns = [title,href,news_time,content,news_source]
             # 保证additions都有上述的column,没有内容的用None
-            self._parse_titles_response()
+            try:
+                self._parse_titles_response()
+            except Exception as e:
+                    print 'Spider %s failed to parse TITLE'%self.spider_name
+                    print 'Error:'
+                    print e
+                    print '*' * 40
+                    self._have_a_short_rest()
+                    continue
             # ------------------------------------------------------------------
             
             
@@ -90,18 +99,28 @@ class NewsSpider(object):
                 if status_code != 200:
                     self._have_a_short_rest()
                     continue
-                self._parse_content_response(idx)
+                try:
+                    self._parse_content_response(idx)
+                except Exception as e:
+                    print 'Spider %s failed to parse content'%self.spider_name
+                    print 'The href is %s'%href
+                    print 'Error:'
+                    print e
+                    print '*' * 40
                 
+            
+            self._add_unique_flag()
             self._check_additions()
             
             if len(self.additions) == 0:
                 self._have_a_rest()
                 continue
-            self._add_unique_flag()
-            self._add_header_flag()
+            
+            self._add_header_flag()            
+
             self._write_into_db()
             self._have_a_rest()
-            
+
     def _get_titles_response(self):
         '''
         获取标题页respsonse.
@@ -141,7 +160,7 @@ class NewsSpider(object):
         # 剔除title重复内容
         self.additions = self.additions.sort_values('news_time',
                                                     ascending = False)
-        self.additions = self.additions.drop_duplicates(subset = 'title')
+        self.additions = self.additions.drop_duplicates(subset = 'unique_flag')
         
         # 剔除空内容
         self.additions = self.additions.dropna(subset = ['content'])

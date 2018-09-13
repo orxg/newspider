@@ -419,11 +419,11 @@ class HeaderSTCNSpider(NewsSpider):
             'news_time','href'])
         
         if self.last_flag is None:
-            self.last_flag = max(news_time)
+            self.last_flag = news_time
             self.additions = news_df
             self.additions.loc[:,'content'] = None
         else:
-            latest_news_time = max(news_time)
+            latest_news_time = news_time
             if latest_news_time <= self.last_flag:
                 self.additions = pd.DataFrame()
                 return # 无更新内容
