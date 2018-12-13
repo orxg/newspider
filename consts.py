@@ -9,4 +9,4 @@ Created on Fri Dec 15 16:07:51 2017
 
 DB_STATE = 'mssql+pymssql://{user}:{pws}@{server}/{db}'
 
-SPIDER_LIVE_TIME = 43200# 爬虫存活时间
+SPIDER_LIVE_TIME = 3600# 爬虫存活时间

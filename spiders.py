@@ -18,7 +18,7 @@ from spider_base import NewsSpider
 from utils import ths_news_time_convertor
 
 class THSSpider(NewsSpider):
-    def __init__(self,lock,update_seconds = 600):
+    def __init__(self,lock,update_seconds = 300):
         super(THSSpider,self).__init__('THS',u'同花顺',
              'http://news.10jqka.com.cn/cjzx_list/index_1.shtml',
              lock,update_seconds)
@@ -83,7 +83,7 @@ class THSSpider(NewsSpider):
         
     
 class ZZWSpdier(NewsSpider):
-    def __init__(self,lock,update_seconds = 600):
+    def __init__(self,lock,update_seconds = 300):
         super(ZZWSpdier,self).__init__('ZZW',u'中证网',
              'http://www.cs.com.cn/xwzx/hg/',
              lock,update_seconds)
@@ -172,7 +172,7 @@ class ZZWSpdier(NewsSpider):
         
     
 class CNSTOCKSpider(NewsSpider):
-    def __init__(self,lock,update_seconds = 600):
+    def __init__(self,lock,update_seconds = 300):
         super(CNSTOCKSpider,self).__init__('CNSTOCK',u'中国证券网',
              'http://news.cnstock.com/news/sns_yw/index.html',
              lock,update_seconds)  
@@ -222,7 +222,7 @@ class CNSTOCKSpider(NewsSpider):
         self.additions.loc[:,'update_datetime'] = dt.datetime.today()  
         
 class STCNSpider(NewsSpider):
-    def __init__(self,lock,update_seconds = 600,news_limit = 10):
+    def __init__(self,lock,update_seconds = 300,news_limit = 10):
         super(STCNSpider,self).__init__('STCN',u'证券时报网',
              'http://news.stcn.com/',
              lock,update_seconds) 
@@ -269,7 +269,7 @@ class STCNSpider(NewsSpider):
         self.additions.loc[:,'update_datetime'] = dt.datetime.today()      
         
 class PeopleSpider(NewsSpider):
-    def __init__(self,lock,update_seconds = 600):
+    def __init__(self,lock,update_seconds = 300):
         super(PeopleSpider,self).__init__('PEOPLE',u'人民网',
              'http://finance.people.com.cn/index1.html',
              lock,update_seconds)
@@ -336,7 +336,7 @@ class PeopleSpider(NewsSpider):
         self.additions.loc[:,'update_datetime'] = dt.datetime.today() 
 
 class HeaderPeopleSpider(NewsSpider):
-    def __init__(self,lock,update_seconds = 600):
+    def __init__(self,lock,update_seconds = 300):
         super(HeaderPeopleSpider,self).__init__('HEADER_PEOPLE',u'人民网',
              'http://finance.people.com.cn/',
              lock,update_seconds)
@@ -399,7 +399,7 @@ class HeaderPeopleSpider(NewsSpider):
         self.additions.loc[:,'update_datetime'] = dt.datetime.today()
 
 class HeaderSTCNSpider(NewsSpider):
-    def __init__(self,lock,update_seconds = 600):
+    def __init__(self,lock,update_seconds = 300):
         super(HeaderSTCNSpider,self).__init__('HEADER_STCN',u'证券时报网',
              'http://news.stcn.com/',
              lock,update_seconds) 
@@ -445,7 +445,7 @@ class HeaderSTCNSpider(NewsSpider):
         self.additions.loc[:,'update_datetime'] = dt.datetime.today() 
 
 class HeaderZZWSpdier(NewsSpider):
-    def __init__(self,lock,update_seconds = 600):
+    def __init__(self,lock,update_seconds = 300):
         super(HeaderZZWSpdier,self).__init__('HEADER_ZZW',u'中证网',
              'http://www.cs.com.cn/xwzx/',
              lock,update_seconds)
@@ -537,7 +537,7 @@ class HeaderZZWSpdier(NewsSpider):
         self.additions.loc[:,'update_datetime'] = dt.datetime.today() 
 
 class HeaderCNSTOCKSpider(NewsSpider):
-    def __init__(self,lock,update_seconds = 600):
+    def __init__(self,lock,update_seconds = 300):
         super(HeaderCNSTOCKSpider,self).__init__('HEADER_CNSTOCK',u'中国证券网',
              'http://www.cnstock.com/',
              lock,update_seconds)  
@@ -589,6 +589,103 @@ class HeaderCNSTOCKSpider(NewsSpider):
         self.additions.loc[idx,'content'] = content
         self.additions.loc[idx,'news_time'] = news_time
         self.additions.loc[:,'update_datetime'] = dt.datetime.today()     
+        
+class Economy21Spider(NewsSpider):
+    def __init__(self,lock,update_seconds = 300):
+        super(Economy21Spider,self).__init__('ECONOMY21',u'21经济网',
+             'http://www.21jingji.com/channel/politics/',
+             lock,update_seconds)       
+        
+    def _parse_titles_response(self):
+        content = self.titles_response.content
+        soup = BeautifulSoup(content,'html.parser')
+        
+        data_list = soup.find(id = 'data_list')
+        news = data_list.find_all('a',class_ = 'listTit')
+        
+        data = []
+        for each in news:
+            data.append([each.attrs['title'],each.attrs['href']])
+        
+        # 当前网站难以实现增量更新
+        news_df = pd.DataFrame(data,columns = ['title','href'])
+        self.additions = news_df
+        self.additions.loc[:,'news_source'] = self.source_name          
+        self.additions.loc[:,'news_time'] = None
+        
+    def _parse_content_response(self,idx):
+        tmp_soup = BeautifulSoup(self.content_response.content,'html.parser')
+        
+       # 内容
+        content = tmp_soup.find('div',class_ = 'detailCont')
+        last_tag = content.find('a',class_ = 'goindex')
+        last_tag.clear()
+        content = str(content).decode('utf8')
+        
+        # 时间
+        news_date = tmp_soup.find('span',class_='').text
+        news_date = news_date.replace(u'年',u'-')
+        news_date = news_date.replace(u'月',u'-')
+        news_date = news_date.replace(u'日',u'')
+        
+        hour_time = tmp_soup.find('span',class_='hour').text
+        
+        news_time = news_date + ' ' + hour_time
+        
+        # 修改self.additions
+        self.additions.loc[idx,'content'] = content
+        self.additions.loc[idx,'news_time'] = news_time
+        self.additions.loc[:,'update_datetime'] = dt.datetime.today() 
+        
+class HeaderEconomy21Spider(NewsSpider):
+    def __init__(self,lock,update_seconds = 300):
+        super(HeaderEconomy21Spider,self).__init__('HEADER_ECONOMY21',u'21经济网',
+             'http://www.21jingji.com/',
+             lock,update_seconds)       
+        self.if_header = 1
+        
+    def _parse_titles_response(self):
+        content = self.titles_response.content
+        soup = BeautifulSoup(content,'html.parser')
+        
+        data_ul = soup.find('ul',class_ = 'listUl')
+        data_list = data_ul.find_all('a')
+        
+        data = []
+        for each in data_list:
+            if each.has_attr('title'):
+                
+                data.append([each.attrs['title'],each.attrs['href']])
+        
+        # 当前网站难以实现增量更新
+        news_df = pd.DataFrame(data,columns = ['title','href'])
+        self.additions = news_df
+        self.additions.loc[:,'news_source'] = self.source_name          
+        self.additions.loc[:,'news_time'] = None
+        
+    def _parse_content_response(self,idx):
+        tmp_soup = BeautifulSoup(self.content_response.content,'html.parser')
+        
+       # 内容
+        content = tmp_soup.find('div',class_ = 'detailCont')
+        last_tag = content.find('a',class_ = 'goindex')
+        last_tag.clear()
+        content = str(content).decode('utf8')
+        
+        # 时间
+        news_date = tmp_soup.find('span',class_='').text
+        news_date = news_date.replace(u'年',u'-')
+        news_date = news_date.replace(u'月',u'-')
+        news_date = news_date.replace(u'日',u'')
+        
+        hour_time = tmp_soup.find('span',class_='hour').text
+        
+        news_time = news_date + ' ' + hour_time
+        
+        # 修改self.additions
+        self.additions.loc[idx,'content'] = content
+        self.additions.loc[idx,'news_time'] = news_time
+        self.additions.loc[:,'update_datetime'] = dt.datetime.today()
         
 if __name__ == '__main__':
 #    ths_spider = THSSpider(None)

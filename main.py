@@ -11,7 +11,7 @@ from threading import Lock
 from spider_base import SpiderMaster
 from spiders import (THSSpider,ZZWSpdier,CNSTOCKSpider,STCNSpider,PeopleSpider,
                      HeaderPeopleSpider,HeaderCNSTOCKSpider,HeaderZZWSpdier,
-                     HeaderSTCNSpider)
+                     HeaderSTCNSpider,Economy21Spider,HeaderEconomy21Spider)
 
 if __name__ == '__main__':
     while True:
@@ -20,7 +20,7 @@ if __name__ == '__main__':
         
         spider_list = []
         # 创建各个网站的spider
-        spider_list.append(THSSpider(lock))
+#        spider_list.append(THSSpider(lock))
         spider_list.append(ZZWSpdier(lock))
         spider_list.append(CNSTOCKSpider(lock))
         spider_list.append(STCNSpider(lock))
@@ -29,6 +29,9 @@ if __name__ == '__main__':
         spider_list.append(HeaderCNSTOCKSpider(lock))
         spider_list.append(HeaderZZWSpdier(lock))
         spider_list.append(HeaderSTCNSpider(lock))    
+        spider_list.append(Economy21Spider(lock))
+        spider_list.append(HeaderEconomy21Spider(lock))
+        
         for each in spider_list:
             spider_master.add_spider(each)
         spider_master.run()
